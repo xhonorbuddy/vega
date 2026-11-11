@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="grid/grid.vcxproj" Id="ad2a1705-3a64-4d37-bc67-579bd03391eb" />
+  <Project Path="lua-5.1/lua-5.1.vcxproj" Id="5b4bf050-1e7d-458c-8610-15142902ae1d" />
+  <Project Path="vega/vega.vcxproj" Id="e39043b2-ccbf-4f90-b63a-2cef2aec5d40" />
+</Solution>
