@@ -298,17 +298,17 @@ typedef struct UpVal {
 
 #define ClosureHeader \
 	CommonHeader; lu_byte isC; lu_byte nupvalues; GCObject *gclist; \
-	struct Table *env; void *client_pad
+	struct Table *env; void *client_extra /* 0x28 taint sidecar, NULL */
 
 typedef struct CClosure {
-  ClosureHeader;            /* env at 0x20, client_pad at 0x28 */
+  ClosureHeader;            /* env at 0x20, client_extra at 0x28 */
   lua_CFunction f;          /* 0x30 */
   TValue upvalue[1];        /* 0x38 */
 } CClosure;
 
 
 typedef struct LClosure {
-  ClosureHeader;            /* env at 0x20, client_pad at 0x28 */
+  ClosureHeader;            /* env at 0x20, client_extra at 0x28 */
   struct Proto *p;          /* 0x30 */
   UpVal *upvals[1];         /* 0x38 */
 } LClosure;
@@ -353,6 +353,7 @@ typedef struct Table {
   Node *lastfree;  /* any free position is before this position */
   GCObject *gclist;
   int sizearray;  /* size of `array' array */
+  lu_byte client_flags[4];  /* 0x44 tainted/frozen flags, zeroed on creation */
 } Table;
 
 

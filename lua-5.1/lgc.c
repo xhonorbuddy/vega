@@ -689,7 +689,22 @@ void luaC_link (lua_State *L, GCObject *o, lu_byte tt) {
   g->rootgc = o;
   o->gch.marked = luaC_white(g);
   o->gch.tt = tt;
-  o->gch.taint = 0;
+  {
+    /* The client stamps every object with a taint taken from the execution
+       wrapper at L+0xE0: wrapper[3] when both wrapper[0] and wrapper[3] are
+       non-null, otherwise wrapper[0]. Mirror that so the collector treats
+       objects created by this library as native ones. */
+    void *wrapper = L->state_tail_extension[0];
+    uintptr_t taint = 0;
+
+    if (wrapper != NULL) {
+      uintptr_t first = ((const uintptr_t *)wrapper)[0];
+      uintptr_t fourth = ((const uintptr_t *)wrapper)[3];
+      taint = (first != 0 && fourth != 0) ? fourth : first;
+    }
+
+    o->gch.taint = taint;
+  }
 }
 
 

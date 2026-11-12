@@ -25,6 +25,7 @@ Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e) {
   luaC_link(L, obj2gco(c), LUA_TFUNCTION);
   c->c.isC = 1;
   c->c.env = e;
+  c->c.client_extra = NULL;
   c->c.nupvalues = cast_byte(nelems);
   return c;
 }
@@ -35,6 +36,7 @@ Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e) {
   luaC_link(L, obj2gco(c), LUA_TFUNCTION);
   c->l.isC = 0;
   c->l.env = e;
+  c->l.client_extra = NULL;
   c->l.nupvalues = cast_byte(nelems);
   while (nelems--) c->l.upvals[nelems] = NULL;
   return c;

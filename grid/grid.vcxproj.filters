@@ -23,6 +23,8 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="wow.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="wow_api.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="patch.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -159,6 +159,7 @@ WOW_ABI_OFFSET(GCheader, marked, 0x11);
 WOW_ABI_OFFSET(Table, flags, 0x12);
 WOW_ABI_OFFSET(Table, lsizenode, 0x13);
 WOW_ABI_OFFSET(Table, node, 0x28);
+WOW_ABI_OFFSET(Table, client_flags, 0x44);
 WOW_ABI_OFFSET(TString, tsv.hash, 0x14);
 WOW_ABI_OFFSET(TString, tsv.len, 0x18);
 WOW_ABI_OFFSET(CClosure, f, 0x30);

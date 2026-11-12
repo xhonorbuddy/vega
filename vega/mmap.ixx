@@ -47,6 +47,8 @@ export namespace manualmap {
         bool register_loader_entry = false;
         bool thread_hijack = false;
         bool force = false;
+        bool erase_headers = true;
+        bool keep_image = false;
         std::uint32_t ddag_state = 9;
         DWORD call_timeout_ms = 60'000;
     };
@@ -423,6 +425,17 @@ namespace manualmap {
             log(options, "[+] Reconstructed imports");
 
             write_image(pe, remote_base, options);
+
+            if (options.erase_headers && pe.size_of_headers != 0) {
+                std::vector<char> zeros(pe.size_of_headers, 0);
+
+                if (memory_.write_memory_with_size(remote_base, zeros.data(), zeros.size())) {
+                    log(options, "[+] Erased PE headers");
+                }
+                else {
+                    log(options, "[!] Could not erase the PE headers");
+                }
+            }
             log(options, "[+] Wrote image into target");
 
             record.magic = VEGA_MODULE_MAGIC;
@@ -631,6 +644,10 @@ namespace manualmap {
             }
         }
 
+        /* Protected targets kill threads whose start is not module-backed,
+           so created-thread stubs never run; use the hijack path. */
+        memory_.set_prefer_thread_hijack(true);
+
         const auto records = find_records(module_name);
 
         if (records.empty()) {
@@ -673,6 +690,40 @@ namespace manualmap {
                 }
             }
 
+            if (options.keep_image) {
+                /* Never touch the target's threads in keep mode: the remote call
+                   corrupts a hijacked thread on this client. */
+                log(options, "[+] Kept the image mapped by request (safe unload)");
+
+                const std::uint64_t cleared_magic = 0;
+
+                static_cast<void>(memory_.write_memory_with_size(
+                    found.address,
+                    &cleared_magic,
+                    sizeof(cleared_magic)
+                ));
+
+                ++unloaded;
+                continue;
+            }
+            /* Diagnostic: does remote_call execute at all in this target?
+               A trivial export with no arguments distinguishes a broken hijack
+               from a DllMain that simply does not run. */
+            {
+                const std::uintptr_t tick = resolve_target_export("kernel32.dll", "GetTickCount");
+
+                if (tick != 0) {
+                    const auto probe = memory_.remote_call(tick, 0, 0, 0, 5000);
+
+                    if (probe.has_value()) {
+                        log(options, "[diag] remote GetTickCount -> " + std::to_string(probe.value()));
+                    }
+                    else {
+                        log(options, "[diag] remote GetTickCount did NOT run");
+                    }
+                }
+            }
+
             // Mirror the loader: DllMain sees DLL_PROCESS_DETACH first, then the
             // TLS detach callbacks run.
             if (record.entry_point != 0) {
@@ -684,8 +735,29 @@ namespace manualmap {
                     options.call_timeout_ms
                 );
 
+                if (result.has_value()) {
+                    log(options, "[diag] DllMain(DLL_PROCESS_DETACH) returned " + std::to_string(result.value()));
+                }
+
                 if (!result.has_value()) {
-                    log(options, "[!] DllMain(DLL_PROCESS_DETACH) did not run");
+                    /* The in-image VEH must stay valid, so the image cannot be
+                       freed when its DllMain never ran. Leave it mapped, mark
+                       the record as handled, and move on. */
+                    log(options, options.keep_image
+                        ? "[+] Kept the image mapped by request (safe unload)"
+                        : "[!] DllMain(DLL_PROCESS_DETACH) did not run; "
+                          "leaving the image mapped so registered handlers stay valid");
+
+                    const std::uint64_t cleared_magic = 0;
+
+                    static_cast<void>(memory_.write_memory_with_size(
+                        found.address,
+                        &cleared_magic,
+                        sizeof(cleared_magic)
+                    ));
+
+                    ++unloaded;
+                    continue;
                 }
             }
 
@@ -1940,7 +2012,13 @@ namespace manualmap {
                 if (memory_.read_memory_with_size(region_base, &record, sizeof(record)) &&
                     record.magic == VEGA_MODULE_MAGIC &&
                     record.version == VEGA_MODULE_RECORD_VERSION) {
-                    if (filter.empty() || _wcsicmp(record.module_name, filter.c_str()) == 0) {
+                    const std::filesystem::path stored_path(record.module_name);
+                    const std::filesystem::path filter_path(filter);
+
+                    const bool name_matches = filter.empty() ||
+                        _wcsicmp(stored_path.filename().c_str(), filter_path.filename().c_str()) == 0;
+
+                    if (name_matches) {
                         FoundRecord entry;
                         entry.address = region_base;
                         entry.record = record;

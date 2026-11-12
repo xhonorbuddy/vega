@@ -8,6 +8,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
 
 export module grid.patch;
 
@@ -114,6 +115,8 @@ export namespace grid::patch {
         return true;
     }
 
+    inline void save_original(std::size_t index, std::uint8_t value) noexcept;
+
     // Applies one entry. Returns true when the byte already had the wanted
     // value (idempotent) or was written successfully.
     [[nodiscard]] inline bool apply(const PatchEntry& entry) noexcept {
@@ -152,6 +155,16 @@ export namespace grid::patch {
             return false;
         }
 
+        std::size_t patch_index = 0;
+        for (const PatchEntry& candidate : kClientPatches) {
+            if (&candidate == &entry) {
+                break;
+            }
+            ++patch_index;
+        }
+
+        save_original(patch_index, current);
+
         if (!write_byte(address, entry.value)) {
             OutputDebugStringA("[grid.patch] write failed\n");
             return false;
@@ -160,14 +173,120 @@ export namespace grid::patch {
         return true;
     }
 
-    // Applies every patch in the table; returns how many are in place.
-    [[nodiscard]] inline std::size_t install_client_patches() noexcept {
-        std::size_t applied = 0;
+    // Original bytes, persisted outside the module so a reload can still restore
+    // them after the first copy is unloaded. The client .text is encrypted on
+    // disk, so the only source of truth is the byte read before the first write.
+    struct OriginalBytes {
+        std::uint32_t magic;
+        std::uint8_t bytes[sizeof(kClientPatches)];
+    };
+
+    inline constexpr std::uint32_t kOriginalMagic = 0x47524450u; // 'GRDP'
+
+    inline void original_path(wchar_t* buffer, std::size_t count) noexcept {
+        wchar_t temp[MAX_PATH]{};
+
+        if (GetTempPathW(MAX_PATH, temp) == 0) {
+            buffer[0] = L'\0';
+            return;
+        }
+
+        swprintf_s(buffer, count, L"%sgrid_originals.bin", temp);
+    }
+
+    [[nodiscard]] inline bool load_originals(OriginalBytes& out) noexcept {
+        wchar_t path[MAX_PATH]{};
+        original_path(path, MAX_PATH);
+
+        HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr,
+            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+        if (file == INVALID_HANDLE_VALUE) {
+            return false;
+        }
+
+        DWORD read = 0;
+        const BOOL ok = ReadFile(file, &out, sizeof(out), &read, nullptr);
+        CloseHandle(file);
+
+        return ok != FALSE && read == sizeof(out) && out.magic == kOriginalMagic;
+    }
+
+    inline void save_original(std::size_t index, std::uint8_t value) noexcept {
+        OriginalBytes data{ kOriginalMagic, {} };
+
+        load_originals(data);
+        data.magic = kOriginalMagic;
+
+        if (index < sizeof(data.bytes)) {
+            data.bytes[index] = value;
+        }
+
+        wchar_t path[MAX_PATH]{};
+        original_path(path, MAX_PATH);
+
+        HANDLE file = CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL, nullptr);
+
+        if (file == INVALID_HANDLE_VALUE) {
+            return;
+        }
+
+        DWORD written = 0;
+        static_cast<void>(WriteFile(file, &data, sizeof(data), &written, nullptr));
+        CloseHandle(file);
+    }
+
+    // Restores every recorded original byte (used before the image is freed).
+    [[nodiscard]] inline std::size_t restore_client_patches() noexcept {
+        OriginalBytes data{};
+
+        if (!load_originals(data)) {
+            return 0;
+        }
+
+        const std::uintptr_t base = client_base();
+
+        if (base == 0) {
+            return 0;
+        }
+
+        std::size_t restored = 0;
+        std::size_t index = 0;
 
         for (const PatchEntry& entry : kClientPatches) {
-            if (apply(entry)) {
+            if (index < sizeof(data.bytes)) {
+                const std::uintptr_t address = base + entry.offset;
+
+                if (write_byte(address, data.bytes[index])) {
+                    ++restored;
+                }
+            }
+
+            ++index;
+        }
+
+        return restored;
+    }
+    // Bit i selects kClientPatches[i]. Defaults to everything.
+    inline constexpr std::uint32_t kPatchDisableFunction = 1u << 0;
+    inline constexpr std::uint32_t kPatchRangeCheck = 1u << 1;
+    inline constexpr std::uint32_t kPatchAll =
+        kPatchDisableFunction | kPatchRangeCheck;
+
+    // Applies the selected patches; returns how many are in place.
+    [[nodiscard]] inline std::size_t install_client_patches(
+        std::uint32_t mask = kPatchAll
+    ) noexcept {
+        std::size_t applied = 0;
+        std::uint32_t index = 0;
+
+        for (const PatchEntry& entry : kClientPatches) {
+            if ((mask & (1u << index)) != 0 && apply(entry)) {
                 ++applied;
             }
+
+            ++index;
         }
 
         return applied;

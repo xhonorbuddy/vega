@@ -6,6 +6,9 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lobject.h"
+#include "lstate.h"
+#include "ltable.h"
 
 static int hello(lua_State* L) {
     lua_pushstring(L, "hello");

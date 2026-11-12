@@ -70,10 +70,16 @@
 
 
 
-#define dummynode		(&dummynode_)
-
+/* The client compares empty tables against its own sentinel node, so the
+   active sentinel is switchable at runtime. Defaults to our local one. */
 static const Node dummynode_ = {0};  /* nil value and key, no chain */
+Node *dummynode_ptr = (Node *)&dummynode_;
+#define dummynode		dummynode_ptr
 
+
+LUAI_FUNC void luaH_set_dummynode (Node *node) {
+  dummynode_ptr = (node != NULL) ? node : (Node *)&dummynode_;
+}
 
 /*
 ** hash for lua_Numbers
@@ -360,6 +366,7 @@ Table *luaH_new (lua_State *L, int narray, int nhash) {
   /* temporary values (kept only if some malloc fails) */
   t->array = NULL;
   t->sizearray = 0;
+  memset(t->client_flags, 0, sizeof(t->client_flags));
   t->lsizenode = 0;
   t->node = cast(Node *, dummynode);
   setarrayvector(L, t, narray);

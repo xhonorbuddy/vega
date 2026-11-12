@@ -26,6 +26,7 @@ namespace {
         DWORD wait_seconds = 0;
         DWORD timeout_ms = 60'000;
         bool unload = false;
+    bool keep_image = false;
         bool list = false;
         bool quiet = false;
         bool tls = true;
@@ -35,6 +36,7 @@ namespace {
         bool loader_entry = false;
         bool hijack = false;
         bool force = false;
+        bool erase_headers = true;
         DWORD ddag_state = 9;
         bool help = false;
     };
@@ -68,7 +70,7 @@ namespace {
             "      --no-entry         map without calling DllMain (debugging aid)\n"
             "      --loader-entry     also link the image into the loader list (experimental)\n"
             "      --hijack           run in-target calls on an existing thread\n"
-            "      --force            unload even if a thread is inside the image\n"
+            "      --force            unload even if a thread is inside the image\n" "      --keep             unload without freeing the image (keeps registered handlers valid)\n"
             "      --ddag-state <n>   Ddag node state used by --loader-entry (default 9)\n"
             "  -q, --quiet            print only errors\n"
             "  -h, --help             show this help\n"
@@ -160,6 +162,12 @@ namespace {
             else if (argument == "--hijack") {
                 command.hijack = true;
             }
+            else if (argument == "--keep-headers") {
+                command.erase_headers = false;
+            }
+            else if (argument == "--keep") {
+                command.keep_image = true;
+            }
             else if (argument == "--force") {
                 command.force = true;
             }
@@ -227,6 +235,8 @@ namespace {
         options.register_loader_entry = command.loader_entry;
         options.thread_hijack = command.hijack;
         options.force = command.force;
+    options.keep_image = command.keep_image;
+        options.erase_headers = command.erase_headers;
         options.ddag_state = command.ddag_state;
         options.call_timeout_ms = command.timeout_ms;
         return options;
