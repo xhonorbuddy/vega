@@ -567,7 +567,7 @@ namespace manualmap {
             return open_with_best_access(process_entry.th32ProcessID);
         } while (Process32NextW(snapshot.get(), &process_entry));
 
-        last_error_ = ERROR_NOT_FOUND;
+        last_error_ = process_name.empty() ? ERROR_INVALID_PARAMETER : ERROR_NOT_FOUND;
         return false;
     }
 

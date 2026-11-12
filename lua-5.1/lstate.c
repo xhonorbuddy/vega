@@ -6,6 +6,7 @@
 
 
 #include <stddef.h>
+#include <string.h>
 
 #define lstate_c
 #define LUA_CORE
@@ -83,6 +84,10 @@ static void f_luaopen (lua_State *L, void *ud) {
 
 static void preinit_state (lua_State *L, global_State *g) {
   G(L) = g;
+  L->taint = 0;
+  L->execution_taint = 0;
+  memset(L->state_extension, 0, sizeof(L->state_extension));
+  memset(L->state_tail_extension, 0, sizeof(L->state_tail_extension));
   L->stack = NULL;
   L->stacksize = 0;
   L->errorJmp = NULL;
@@ -154,6 +159,10 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   L->marked = luaC_white(g);
   set2bits(L->marked, FIXEDBIT, SFIXEDBIT);
   preinit_state(L, g);
+  memset(g->pad0, 0, sizeof(g->pad0));
+  memset(g->pad1, 0, sizeof(g->pad1));
+  memset(g->pad2, 0, sizeof(g->pad2));
+  g->uvhead.taint = 0;
   g->frealloc = f;
   g->ud = ud;
   g->mainthread = L;

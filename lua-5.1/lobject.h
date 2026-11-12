@@ -10,6 +10,8 @@
 
 
 #include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 #include "llimits.h"
@@ -40,7 +42,7 @@ typedef union GCObject GCObject;
 ** Common Header for all collectable objects (in macro form, to be
 ** included in other objects)
 */
-#define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
+#define CommonHeader	GCObject *next; uintptr_t taint; lu_byte tt; lu_byte marked
 
 
 /*
@@ -68,18 +70,12 @@ typedef union {
 ** Tagged Values
 */
 
-/*
-** WoW stores TValue entries in 24-byte stack slots on x64.  The first
-** word is the normal Lua value, followed by the type byte and an adjacent
-** runtime flag byte; the final word is an opaque VM sidecar.  Keep this in
-** TValuefields as TKey embeds the same representation.
-*/
+/* WoW x64 tagged value, shared by stack slots and table keys. */
 #define TValuefields \
   Value value; \
-  lu_byte tt; \
-  lu_byte flags; \
-  lu_byte _padding[6]; \
-  void *sidecar
+  int tt; \
+  int _pad; \
+  uintptr_t taint
 
 typedef struct lua_TValue {
   TValuefields;
@@ -98,7 +94,7 @@ typedef struct lua_TValue {
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 
 /* Macros to access values */
-#define ttype(o)	((o)->tt)
+#define ttype(o)	((o)->tt & 0xFF)
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
@@ -171,8 +167,8 @@ typedef struct lua_TValue {
 
 #define setobj(L,obj1,obj2) \
   { const TValue *o2=(obj2); TValue *o1=(obj1); \
-    o1->value = o2->value; o1->tt=o2->tt; o1->flags=o2->flags; \
-    o1->sidecar=o2->sidecar; \
+    o1->value = o2->value; o1->tt=o2->tt; o1->_pad=o2->_pad; \
+    o1->taint=o2->taint; \
     checkliveness(G(L),o1); }
 
 
@@ -195,7 +191,7 @@ typedef struct lua_TValue {
 #define setobj2n	setobj
 #define setsvalue2n	setsvalue
 
-#define setttype(obj, tt) (ttype(obj) = (tt))
+#define setttype(obj, tag) ((obj)->tt = (tag))
 
 
 #define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
@@ -302,19 +298,19 @@ typedef struct UpVal {
 
 #define ClosureHeader \
 	CommonHeader; lu_byte isC; lu_byte nupvalues; GCObject *gclist; \
-	struct Table *env
+	struct Table *env; void *client_pad
 
 typedef struct CClosure {
-  ClosureHeader;
-  lua_CFunction f;
-  TValue upvalue[1];
+  ClosureHeader;            /* env at 0x20, client_pad at 0x28 */
+  lua_CFunction f;          /* 0x30 */
+  TValue upvalue[1];        /* 0x38 */
 } CClosure;
 
 
 typedef struct LClosure {
-  ClosureHeader;
-  struct Proto *p;
-  UpVal *upvals[1];
+  ClosureHeader;            /* env at 0x20, client_pad at 0x28 */
+  struct Proto *p;          /* 0x30 */
+  UpVal *upvals[1];         /* 0x38 */
 } LClosure;
 
 
