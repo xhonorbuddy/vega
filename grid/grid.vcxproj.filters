@@ -21,6 +21,6 @@
     <ClCompile Include="api.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="registration.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="exceptions.ixx"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="patch.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="breakpoint.ixx"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
 </Project>

@@ -234,9 +234,20 @@
             "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\um\\winsvc.h",
             "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\um\\mcx.h",
             "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\um\\imm.h",
-            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\um\\ime_cmodes.h"
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\um\\ime_cmodes.h",
+            "c:\\users\\delta\\documents\\github\\vega\\lua-5.1\\luaconf.h",
+            "c:\\users\\delta\\documents\\github\\vega\\lua-5.1\\lua.h",
+            "c:\\users\\delta\\documents\\github\\vega\\lua-5.1\\lauxlib.h",
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\ucrt\\stdio.h",
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\ucrt\\corecrt_wstdio.h",
+            "c:\\program files (x86)\\windows kits\\10\\include\\10.0.26100.0\\ucrt\\corecrt_stdio_config.h"
         ],
-        "ImportedModules": [],
+        "ImportedModules": [
+            {
+                "Name": "grid.breakpoint",
+                "BMI": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\exceptions_test\\breakpoint.ixx.ifc"
+            }
+        ],
         "ImportedHeaderUnits": []
     }
 }

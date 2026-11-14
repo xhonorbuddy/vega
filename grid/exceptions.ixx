@@ -1,7 +1,13 @@
 module;
 #include <windows.h>
+#include "luaconf.h"
+#undef LUA_API
+#define LUA_API extern "C"
+#include "lua.h"
+#include "lauxlib.h"
 
 export module grid.exceptions;
+import grid.breakpoint;
 
 export namespace grid::exceptions {
 bool start() noexcept;
@@ -11,6 +17,11 @@ LONG observed_count() noexcept;
 
 namespace grid::exceptions {
 namespace {
+int test(lua_State* L) {
+    lua_pushstring(L, "here");
+    return 1;
+}
+
 PVOID handler{};
 volatile LONG observed{};
 volatile LONG reporting{};
@@ -18,6 +29,15 @@ volatile LONG reporting{};
 LONG CALLBACK monitor(EXCEPTION_POINTERS* info) noexcept {
     if (!info || !info->ExceptionRecord) return EXCEPTION_CONTINUE_SEARCH;
     const auto& record = *info->ExceptionRecord;
+
+    // Hop
+    if (record.ExceptionCode == STATUS_BREAKPOINT && info->ContextRecord &&
+        breakpoint::address() != 0 &&
+        reinterpret_cast<DWORD64>(record.ExceptionAddress) == breakpoint::address()) {
+        info->ContextRecord->Rip = (DWORD64)test;
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
     // Bypass fake raise
     if (record.ExceptionCode == 0xC00000E5)
         return EXCEPTION_CONTINUE_EXECUTION;
@@ -53,7 +73,7 @@ LONG CALLBACK monitor(EXCEPTION_POINTERS* info) noexcept {
 bool start() noexcept {
     if (handler) return true;
     InterlockedExchange(&observed, 0);
-    handler = AddVectoredExceptionHandler(1, monitor);
+    handler = AddVectoredExceptionHandler(0, monitor);
     return handler != nullptr;
 }
 void stop() noexcept {

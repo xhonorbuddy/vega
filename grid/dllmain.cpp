@@ -1,6 +1,5 @@
 #include <windows.h>
 import grid.registration;
-import grid.patch;
 import grid.exceptions;
 
 BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
@@ -13,7 +12,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
     }
     if (reason == DLL_PROCESS_DETACH) {
         grid::registration::stop();
-        grid::patch::stop();
         grid::exceptions::stop();
     }
     return TRUE;

@@ -169,7 +169,7 @@
     <ClCompile Include="api.ixx" />
     <ClCompile Include="registration.ixx" />
     <ClCompile Include="exceptions.ixx" />
-    <ClCompile Include="patch.ixx" />
+    <ClCompile Include="breakpoint.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\lua-5.1\lua-5.1.vcxproj">
