@@ -15,18 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="wow.ixx"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="wow_api.ixx"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="patch.ixx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="dllmain.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="signature.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="client_lua.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="api.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="registration.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="exceptions.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="patch.ixx"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
 </Project>

@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\exceptions_test\\exceptions.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\exceptions_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\exceptions_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\exceptions_test\\exceptions.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.exceptions",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\exceptions.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": []
+        }
+    ]
+}
