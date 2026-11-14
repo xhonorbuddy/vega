@@ -171,6 +171,12 @@
     <ClCompile Include="exceptions.ixx" />
     <ClCompile Include="breakpoint.ixx" />
     <ClCompile Include="lua_registration.ixx" />
+    <ClCompile Include="entity_client.ixx" />
+    <ClCompile Include="entity_index.ixx" />
+    <ClCompile Include="wow.ixx" />
+    <ClCompile Include="wow_api.ixx" />
+    <ClCompile Include="object_manager.ixx" />
+    <ClCompile Include="object_api.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\lua-5.1\lua-5.1.vcxproj">

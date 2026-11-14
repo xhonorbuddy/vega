@@ -1,0 +1,48 @@
+void __fastcall sub_1464090(__int64 a1)
+{
+  __int64 v1; // rdi
+  char v4; // of
+  char v5; // cl
+  char v6; // zf
+  int v7; // eax
+  unsigned int v8; // ecx
+  _QWORD v10[6]; // [rsp+38h] [rbp-30h] BYREF
+  void *retaddr; // [rsp+78h] [rbp+10h]
+
+  v10[4] = v1;
+  v10[0] = v10;
+  v10[1] = v10;
+  qword_48D0C08 = 0;
+  if ( (unsigned __int8)sub_56DCA0(a1, 0, "IsPlayerInWorld") != 0 )
+    sub_39E10F0(a1);
+  sub_39E3440(a1, 0, 0);
+  if ( v4 )
+  {
+    if ( !v4 )
+    {
+      ((void (__fastcall *)(void *))loc_14670C0)(retaddr);
+      if ( v6 )
+      {
+        if ( !__SETP__(v5 + 37, 0) )
+        {
+          if ( (char)(v5 + 37) >= 0 )
+          {
+            if ( __SETP__(v5 + 37, 0) )
+            {
+              v7 = ((__int64 (*)(void))loc_14653DC)();
+              *(_DWORD *)(v8 + 1223672110 - 717386936LL) += v7 + (v8 < 0xB7103ED2);
+              __asm { outsd }
+              JUMPOUT(0x14641BD);
+            }
+            JUMPOUT(0x14647D4);
+          }
+          JUMPOUT(0x14641A8);
+        }
+        JUMPOUT(0x146411C);
+      }
+      JUMPOUT(0x14737C8);
+    }
+    JUMPOUT(0x1464160);
+  }
+  JUMPOUT(0x1464153);
+}

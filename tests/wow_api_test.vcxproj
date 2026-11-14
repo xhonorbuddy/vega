@@ -6,9 +6,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup><OutDir>$(ProjectDir)..\tmp\wow-api-test\</OutDir><IntDir>$(ProjectDir)..\tmp\wow-api-test\obj\</IntDir></PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader><AdditionalIncludeDirectories>$(ProjectDir)..\lua-5.1</AdditionalIncludeDirectories><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary></ClCompile>
-    <Link><LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration><AdditionalDependencies>$(ProjectDir)..\lib\lua-5.1.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+    <ClCompile><LanguageStandard>stdcpp20</LanguageStandard><PrecompiledHeader>NotUsing</PrecompiledHeader><AdditionalIncludeDirectories>$(ProjectDir)..\lua-5.1</AdditionalIncludeDirectories><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><PreprocessorDefinitions>GRID_ENTITY_TESTING;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile>
+    <Link><LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration><AdditionalDependencies>$(ProjectDir)..\lib\x64\Release\lua-5.1.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
   </ItemDefinitionGroup>
-  <ItemGroup><ClCompile Include="wow_api_test.cpp" /><ClCompile Include="..\grid\wow.ixx" /><ClCompile Include="..\grid\wow_api.ixx" /></ItemGroup>
+  <ItemGroup><ClCompile Include="wow_api_test.cpp" /><ClCompile Include="..\grid\wow.ixx" /><ClCompile Include="..\grid\entity_client.ixx" /><ClCompile Include="..\grid\entity_index.ixx" /><ClCompile Include="..\grid\signature.ixx" /><ClCompile Include="..\grid\object_manager.ixx" /><ClCompile Include="..\grid\wow_api.ixx" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

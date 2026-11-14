@@ -15,15 +15,20 @@ module;
 
 export module grid.wow_api;
 import grid.wow;
+import grid.entity_client;
+import grid.object_manager;
 
 export namespace grid::wow_api {
+    enum class property { info, valid, type, id, owner, target, health, power, flags, flags3,
+        name, position, plate, facing, dead, ghost, animation, bite };
+    int read(lua_State* L, property kind);
     extern const luaL_Reg functions[];
     void set_game_thread(DWORD thread_id);
 }
 
 namespace grid::wow_api {
 namespace {
-    namespace state = wow::client_state_70888;
+    namespace state = wow::client_state_70938;
     DWORD game_thread = 0;
     const char* const type_names[] = {
         "Object", "Item", "Container", "AzeriteEmpoweredItem", "AzeriteItem",
@@ -36,17 +41,7 @@ namespace {
             ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
     }
 
-    bool supported_build() {
-        const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        if (!base) return false;
-        const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) return false;
-        const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS64*>(base + dos->e_lfanew);
-        return nt->Signature == IMAGE_NT_SIGNATURE &&
-            nt->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64 &&
-            nt->FileHeader.TimeDateStamp == state::image_timestamp &&
-            nt->OptionalHeader.SizeOfImage == state::image_size;
-    }
+    bool supported_build() { return entity_client::supported(); }
 
     const char* phase_name(state::phase phase) {
         switch (phase) {
@@ -92,6 +87,12 @@ namespace {
     }
 
     uintptr_t object_address(lua_State* L) {
+        if (lua_type(L,1)==LUA_TUSERDATA) {
+            auto* value=static_cast<object_manager::handle*>(
+                luaL_checkudata(L,1,object_manager::metatable_name));
+            if (lua_objlen(L,1)!=sizeof(*value)) luaL_error(L,"invalid entity handle size");
+            return reinterpret_cast<uintptr_t>(object_manager::lookup(value->id));
+        }
         if (lua_type(L, 1) == LUA_TLIGHTUSERDATA)
             return reinterpret_cast<uintptr_t>(lua_touserdata(L, 1));
         if (lua_type(L, 1) == LUA_TNUMBER) {
@@ -112,8 +113,7 @@ namespace {
         return 0;
     }
 
-    enum class query { info, valid, type, id, owner, target, health, power, flags, flags3,
-        name, position, plate, facing, dead, ghost, animation, bite };
+    using query=property;
     struct object_result {
         bool valid{}, unit{}, dead{}, ghost{}, bite{};
         uint8_t type{};
@@ -174,7 +174,7 @@ namespace {
     int object_query(lua_State* L, query kind) {
         const uintptr_t address = object_address(L);
         const bool validity = kind == query::valid;
-        if (!supported_build()) return failure(L, "unsupported client build; expected 1.60.1.70888", validity);
+        if (!supported_build()) return failure(L, "unsupported client build; expected 1.60.1.70938", validity);
         if (!game_thread || GetCurrentThreadId() != game_thread)
             return failure(L, "object queries must run on the registered game thread", validity);
         state::snapshot world{};
@@ -242,7 +242,7 @@ namespace {
         state::snapshot world{};
         read_world(world);
         lua_createtable(L, 0, 8);
-        string(L, "build", "1.60.1.70888"); string(L, "state", phase_name(world.state()));
+        string(L, "build", "1.60.1.70938"); string(L, "state", phase_name(world.state()));
         boolean(L, "available", world.available); boolean(L, "buildSupported", supported_build());
         boolean(L, "inWorld", world.state() == state::phase::in_world);
         boolean(L, "loading", world.state() == state::phase::loading);
@@ -264,7 +264,7 @@ namespace {
         for (int i = 0; i < 15; ++i) {
             lua_createtable(L, 0, 3);
             number(L, "id", i); string(L, "name", type_names[i]);
-            number(L, "hierarchyMask", wow::entity_layout_70888::hierarchy_masks[i]);
+            number(L, "hierarchyMask", wow::entity_layout_70938::hierarchy_masks[i]);
             lua_rawseti(L, -2, i + 1);
         }
         return 1;
@@ -272,6 +272,7 @@ namespace {
     template<query Kind> int get(lua_State* L) { return object_query(L, Kind); }
 }
 
+int read(lua_State* L, property kind) { return object_query(L,kind); }
 void set_game_thread(DWORD thread_id) { game_thread = thread_id; }
 const luaL_Reg functions[] = {
     {"WorldState", world_state}, {"IsInWorld", in_world}, {"IsLoading", loading},

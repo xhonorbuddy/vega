@@ -1,0 +1,62 @@
+{
+  "CGObject_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGItem_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGContainer_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGAzeriteEmpoweredItem_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGAzeriteItem_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGUnit_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGPlayer_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGActivePlayer_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGGameObject_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGDynamicObject_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGCorpse_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGAreaTrigger_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGSceneObject_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGConversation_C": {
+    "td": null,
+    "vtables": []
+  },
+  "CGMeshObject_C": {
+    "td": null,
+    "vtables": []
+  }
+}

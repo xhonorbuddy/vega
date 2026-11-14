@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\object_api.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\object_api.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.object_api",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\object_api.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": [
+                {
+                    "logical-name": "grid.wow"
+                },
+                {
+                    "logical-name": "grid.wow_api"
+                },
+                {
+                    "logical-name": "grid.object_manager"
+                },
+                {
+                    "logical-name": "grid.lua_registration"
+                }
+            ]
+        }
+    ]
+}

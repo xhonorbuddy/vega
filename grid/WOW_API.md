@@ -1,88 +1,133 @@
-# WoW 1.60.1.70888 queries in grid.dll
+# Entities and object manager: 1.60.1.70938
 
-The verified entity and client-state layouts are ported into the `grid.wow`
-module in `wow.ixx`. Lua registration and queries are in `grid.wow_api`,
-defined by `wow_api.ixx`.
-The Lua functions below are added to the existing global `C` table by both
-registration paths. `C.AFK` is preserved.
+The `entities-70888` research is migrated into the current DLL and checked against
+the latest saved 70938 IDB, using a separate headless snapshot. The user's open
+IDA windows were not controlled or modified. `entity-verification-70938.json`
+records the verified fields, ABI, signatures, and addresses.
 
 ```lua
-local state = C.WorldState()
-print(state.state) -- in_world, loading, outside_world, unavailable
-print(C.IsInWorld(), C.IsLoading())
-
--- An existing live client object pointer, as lightuserdata or a hex address:
-local info, err = C.ObjectInfo(objectPointer)
-if info then
-    print(info.typeName, info.guid, info.name)
-    print(info.position.x, info.position.y, info.position.z)
+local objects, err = C.Objects()
+if not objects then print(err); return end
+for _, object in ipairs(objects) do
+    local x, y, z = object:Position()
+    print(object:GUID(), object:Type(), object:Name(), x, y, z)
 end
+
+local units = C.Objects(5, true)       -- Unit + Player + ActivePlayer
+local exactUnits = C.ObjectsFiltered(5) -- Unit only
+local bobber = C.Objects("Exact Name") -- first matching visible name
+local same = C.Object(objects[1]:GUID())
+print(same == objects[1])              -- GUID identity
 ```
 
-Object queries run on the thread that registered the API, require the expected
-executable PE fingerprint, and require an in-world state without an active
-loading screen. A missing/unsupported state or an invalid object returns
-`nil, reason`; `ObjectValid` returns `false, reason`. Access violations and
-in-page memory faults are contained. Callers must still supply live objects: the type/tag/vtable
-checks cannot establish the lifetime of a pointer whose memory has been reused.
+`C.Objects()` enumerates the client's visible-object index. It returns a table,
+including an empty table when nothing matches. Numeric arguments filter by type;
+`true` as the second argument includes derived classes. A name or full GUID string
+returns one object, following Tetra's identifier-search convention. `C.Object`
+also resolves an exact name or a `0x`-prefixed 32-hex-digit GUID. No unit-token
+parser is implied. Failures return `nil, reason`.
 
-No object enumerator or GUID-to-pointer resolver is inferred from the old
-Tetra signatures. These queries consume pointers obtained by the caller.
-Pointers can be lightuserdata, a complete `0x...` hexadecimal string, or an
-exact nonnegative Lua number no greater than 2^53-1. Hexadecimal strings preserve
-all address bits.
+Each result is full userdata containing a 16-byte GUID, with the protected
+`grid.entity` metatable. It owns no client object. Every live-property query
+resolves the GUID again through the read-only object index, validates type/construction state and vtable, and runs
+on the registration thread while the world is ready. A retained handle therefore
+does not retain a stale raw pointer. `Valid()` returns false after removal or
+while loading; `GUID()` and `tostring()` still report the stored identity.
 
-## Available functions
+| Object method | Result |
+| --- | --- |
+| `Valid()` / `IsA(type)` | Validity / inheritance check |
+| `GUID()` / `Base()` | Exact GUID / current pointer as hexadecimal strings |
+| `Type()` | Numeric type and class name |
+| `Name()` / `Info()` | Bounded name / complete property table |
+| `Position()` / `PlatePosition()` | Three numbers: x, y, z |
+| `Facing()` | Radians as a number |
+| `Owner()` / `Target()` / `TargetGUID()` | GUID, or nil when empty |
+| `Health()` | Number plus exact decimal string for int64 precision |
+| `Power([type])` / `ManaPower()` | Resource value; default is displayed resource |
+| `Flags()` / `Flags3()` | Separate unsigned unit flag words |
+| `IsDead()` / `DeadOrGhost()` | Unit-only predicates |
+| `AnimationFlags()` / `Animating()` | Game-object local flags / fishing splash window |
 
-| Function | Result |
-|---|---|
-| `WorldState()` | State table, build support, availability, loading flags/count |
-| `IsInWorld()` / `IsLoading()` | Boolean, including loading-screen precedence |
-| `ObjectTypes()` | 15 records: id, name, inheritance mask |
-| `ObjectInfo(pointer)` | Combined identity, name, position/facing, class-specific fields |
-| `ObjectValid(pointer)` | Constructed-class tag and expected primary vtable match |
-| `ObjectType(pointer)` | Numeric type ID, class name |
-| `ObjectGUID(pointer)` | Full high/low GUID as a 32-digit hex string prefixed with 0x |
-| `ObjectOwner(pointer)` | Verified Item/Unit/GameObject/Corpse relationship, or nil |
-| `ObjectTarget(pointer)` | Unit target GUID or nil |
-| `ObjectHealth(pointer)` | Raw 64-bit health as a number plus an exact decimal string |
-| `ObjectPower(pointer[, type])` | Displayed resource; use type 0 for mana |
-| `ObjectFlags(pointer)` / `ObjectFlags3(pointer)` | Separate primary/death-related words |
-| `ObjectName(pointer)` | Object name, or UNKNOWN |
-| `ObjectPosition(pointer)` / `ObjectPlatePosition(pointer)` | Table with x, y, z |
-| `ObjectFacing(pointer)` | Component/transport-aware facing |
-| `ObjectDead(pointer)` / `ObjectDeadOrGhost(pointer)` | Unit-class Boolean |
-| `ObjectAnimationFlags(pointer)` | Game-object local flags byte at +0x114 |
-| `Animating(pointer)` / `FishingBiteAnimationActive(pointer)` | Fishing-node splash window |
+Unit-only properties reject other classes. Unsupported ownership relationships
+return nil. The splash predicate follows the verified 70888 capture; the relevant
+70938 field locations are unchanged, but a fresh in-game splash was not sampled.
+Tetra's mutation/input methods (Click, SetFacing, etc.) are not migrated here.
 
-Unit-only queries reject other classes. `ObjectInfo` omits fields that do not
-apply to that class. Its `healthExact` field avoids Lua-number precision loss
-for health values exceeding 2^53. Empty GUIDs are represented as nil.
+The existing flat queries remain available: `C.WorldState`, `C.IsInWorld`,
+`C.IsLoading`, `C.ObjectTypes`, `C.ObjectInfo`, `C.ObjectValid`, `C.ObjectType`,
+`C.ObjectGUID`, `C.ObjectOwner`, `C.ObjectTarget`, `C.ObjectHealth`, `C.ObjectPower`,
+`C.ObjectFlags`, `C.ObjectFlags3`, `C.ObjectName`, `C.ObjectPosition`,
+`C.ObjectPlatePosition`, `C.ObjectFacing`, `C.ObjectDead`, `C.ObjectDeadOrGhost`,
+`C.ObjectAnimationFlags`, `C.Animating`, and `C.FishingBiteAnimationActive`.
+They accept entity handles as well as the original lightuserdata/hex-pointer
+inputs. Flat position queries return vector tables. The two print tests remain.
 
-`Animating` checks subtype 17 and the local animation status, excluding the
-despawn bit. The confirmed cast transitioned 0x11 -> 0x13 -> 0x11 -> 0x05,
-while raw network GO state stayed 1. The splash window lasted about 1.31 seconds.
-It is a transient bite-animation indication, not a persistent loot-ready latch.
+## Verified migration
 
-The world-state helper uses the packed flags word at RVA 0x4CD5D78 (in-world
-bit 0x10), the signed counter pointed to at RVA 0x69E47C0, and the screen-layer
-handle at RVA 0x69E4828. The three-float vector is 12 bytes; the mouse overlay
-uses type/GUID/position offsets 0x2D0/0x2D8/0x2E8.
+All 15 class IDs, inheritance masks, construction tag +0x25, type +0x24, and
+low/high GUID at +0x10 agree with the new class factory at `0x1A13480` and
+class constructors. Vtable name/plate/dead-or-ghost slots are 52/15/75. Health
+remains signed int64 +0x1E28; flags +0x1E58 and +0x1E60 remain separate. Power
+storage, target/owner GUIDs, game-object state/subtype, and local animation byte
+were checked against current instructions and constructors.
 
-The C++ module exposes the complete migrated entity accessors, type hierarchy,
-primary vtable mapping, GUID, terrain-click and mouse layouts. The Lua adapter
-uses the native name pointer directly and makes a bounded copy instead of
-allocating a C++ string inside its Windows fault boundary.
+`entity_client.ixx` resolves 31 native functions, globals, and class-table
+references from unique IDA patterns. Runtime support requires AMD64 timestamp
+`0x6AF601DA`. The exported IDB image reports size `0x7428A00`; the live client
+reports `0x7422000`, so support does not require those two sizes to be equal.
+All needed addresses are inside the live image.
 
-## Verification
+| Binding | Verified RVA |
+| --- | --- |
+| Visible enumeration | `0x1A10210` |
+| Script-facing GUID lookup (reference only) | `0x1A11C90` |
+| Position / facing | `0x1F61D0` / `0x20EEF0` |
+| Power-slot / death helper | `0x20C3050` / `0x1FAD740` |
+| World flags / loading pointer / layer | `0x4DEA0E8` / `0x6AF8B40` / `0x6AF8BA8` |
 
-`tests/wow_api_test.vcxproj` builds a standalone host against the same port and
-Lua adapter. It checks all 15 type guards, GUID order, large health, distinct
-flag words, ownership/target gating, captured splash flags, input layout,
-world-state precedence, preservation of existing C.AFK registration, every new
-function registration, unsupported-client rejection, and malformed addresses.
-It does not inject the DLL or invoke version-specific client RVAs in the host.
+The enumeration callback receives a GUID pointer and a zero context argument,
+not an entity pointer. The manager collects GUIDs synchronously, deduplicates
+results, and resolves their CGObject components through the current object index. It bounds snapshots at
+65,536 entries and rejects reentrant enumeration.
 
-The existing loader, exception/protection handling, and Lua ABI changes in the
-working tree were preserved. This update adds the query layer and registration
-entries; it does not alter those mechanisms.
+Some constructor pages are inaccessible even in-world. Class-table references
+are optional at initialization: a missing class table is cached only after the
+read-only index lookup independently returns that exact live
+object with the expected type/tag. There is no fixed-RVA fallback and no change
+to client code or memory protections. Existing VEH behavior is unchanged.
+
+Lua userdata was checked against native `lua_newuserdata` (`0x39E20C0`) and its
+allocator (`0x39EE960`): header/payload offset 0x30, metatable +0x18, environment
++0x20, length +0x28. The integration test asserts the vendored layout and forces
+collection of these userdata.
+
+## Validation
+
+- Debug/Release x64 DLL builds.
+- `tests/verify_entity_bindings.py <70938-export.exe>` checks all 31 unique
+  signatures/RIP targets and all 15 masks against the PE export.
+- `tests/wow_api_test.vcxproj` tests all 15 class guards and accessor layouts.
+- `tests/object_manager_test.vcxproj` exercises real Lua userdata/metatables and
+  INT3/VEH registration with synthetic native providers: enumeration, GUID/name
+  lookup, inheritance filters, methods, identity, stale handles, construction
+  tags, loading precedence, wrong-thread rejection, contained read faults,
+  snapshot overflow, cold-vtable confirmation, registration errors, repeated
+  GC cycles, and recovery.
+- A read-only check of the running 70938 client confirmed native signatures and
+  world/loading globals: flags 0x211, zero requests, no loading layer. Alternate flag references handle
+  changing code-page readability.
+
+The first live test captured 28 GUIDs but the script-facing lookup exposed none.
+The resolver now walks the verified index: entries +0x8, count +0x10, 16-byte
+cells, CGObject component descriptor at metadata +0x34, including external banks.
+A read-only walk found 63 correctly typed objects and confirmed matching GUIDs.
+This updated resolver still needs to be exercised by loading the rebuilt DLL.
+`C.ObjectManagerStats()` reports the last enumeration and subsequent lookup counts:
+`enumerated`, `unique`, `lookups`, `missing`, `invalid`, and `mismatched`.
+
+Native enumeration and userdata use inside the live client have not been
+executed by the assistant as part of these checks. No DLL was injected, no remote function was
+called, and no client protection was changed. Keep the DLL/VEH loaded while Lua
+holds registered callbacks or entity userdata. Live gameplay stability remains
+to be validated by loading the built DLL in the intended session.

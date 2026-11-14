@@ -12,6 +12,10 @@ import grid.client_lua;
 import grid.api;
 import grid.breakpoint;
 import grid.lua_registration;
+import grid.entity_client;
+import grid.wow_api;
+import grid.object_manager;
+import grid.object_api;
 
 export namespace grid::registration {
 bool start();
@@ -36,8 +40,24 @@ LRESULT CALLBACK dispatch(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         return 0;
     }
     if (auto* L = client_lua::state()) {
+        if (!entity_client::initialize()) {
+            OutputDebugStringA("[grid] entity signatures/build unsupported; object API registration skipped.\n");
+            return 0;
+        }
+        object_manager::set_game_thread(GetCurrentThreadId());
+        wow_api::set_game_thread(GetCurrentThreadId());
+        if (!object_api::initialize(L)) {
+            OutputDebugStringA("[grid] insufficient slots for entity metatable.\n");
+            return 0;
+        }
         if (!lua_registration::register_api(L, "C", api::functions)) {
             OutputDebugStringA("[grid] insufficient INT3 slots or invalid API; registration skipped.\n");
+            return 0;
+        }
+        if (!lua_registration::register_api(L, nullptr, wow_api::functions) ||
+            !lua_registration::register_api(L, nullptr, object_api::functions)) {
+            lua_pop(L,1);
+            OutputDebugStringA("[grid] insufficient slots for object API.\n");
             return 0;
         }
         lua_pop(L, 1);

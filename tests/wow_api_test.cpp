@@ -13,6 +13,7 @@ extern "C" {
 }
 import grid.wow;
 import grid.wow_api;
+import grid.entity_client;
 
 template<class T, size_t N>
 void put(std::array<std::byte, N>& bytes, size_t offset, T value) {
@@ -25,7 +26,7 @@ int hello(lua_State* L) { lua_pushliteral(L, "hello"); return 1; }
 
 int main() {
     using namespace grid::wow;
-    namespace state = client_state_70888;
+    namespace state = client_state_70938;
     static_assert(sizeof(guid) == 16 && sizeof(vector3) == 12);
     static_assert(offsetof(ctm, type) == 0x1C);
     static_assert(offsetof(mouseClick, type) == 0x2D0);
@@ -36,11 +37,15 @@ int main() {
     static_assert(state::snapshot{true, 0x10, 0, true}.state() == state::phase::loading);
     check(state::read().state() == state::phase::unavailable);
 
+    grid::entity_client::bindings bindings{};
+    for (unsigned i=0;i<15;++i) bindings.vtables[i]=reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr))+
+        entity_layout_70938::primary_vtable_rvas[i];
+    grid::entity_client::configure_for_tests(bindings);
     alignas(16) std::array<std::byte, 0x2300> bytes{};
     auto* object = ::new (bytes.data()) entity;
     const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     for (uint8_t type = 0; type < 15; ++type) {
-        put(bytes, 0, base + entity_layout_70888::primary_vtable_rvas[type]);
+        put(bytes, 0, base + entity_layout_70938::primary_vtable_rvas[type]);
         put(bytes, 0x24, type); put(bytes, 0x25, type);
         check(object->active() && object->isA(ENTITY) && object->isA(static_cast<gameobject>(type)));
         check(object->isA(UNIT) == (type >= 5 && type <= 7));
@@ -50,7 +55,7 @@ int main() {
             check(object->owner().low == 17);
         }
     }
-    put(bytes, 0, base + entity_layout_70888::primary_vtable_rvas[UNIT]);
+    put(bytes, 0, base + entity_layout_70938::primary_vtable_rvas[UNIT]);
     put(bytes, 0x24, uint8_t{UNIT}); put(bytes, 0x25, uint8_t{UNIT});
     put(bytes, 0x10, guid{0x1122334455667788, 0x2233445566778899});
     put(bytes, 0x1E28, int64_t{5000000000});
@@ -65,7 +70,7 @@ int main() {
     check(!object->active() && object->health() == 0 && object->owner().high == 0);
     const auto pos = object->location();
     check(pos.x == 0 && pos.y == 0 && pos.z == 0 && object->facing() == 0);
-    put(bytes, 0, base + entity_layout_70888::primary_vtable_rvas[GAMEOBJECT]);
+    put(bytes, 0, base + entity_layout_70938::primary_vtable_rvas[GAMEOBJECT]);
     put(bytes, 0x24, uint8_t{GAMEOBJECT}); put(bytes, 0x25, uint8_t{GAMEOBJECT});
     put(bytes, 0x188, guid{15, uint64_t{2} << 58});
     put(bytes, 0x1C9, uint8_t{17}); put(bytes, 0x1C8, uint8_t{1});
@@ -78,11 +83,12 @@ int main() {
     put(bytes, 0x114, uint8_t{5}); check(!object->fishingBiteAnimationActive());
     put(bytes, 0x114, uint8_t{7}); check(!object->fishingBiteAnimationActive());
     put(bytes, 0x1C9, uint8_t{3}); check(!object->fishingBiteAnimationActive());
-    put(bytes, 0, base + entity_layout_70888::primary_vtable_rvas[CORPSE]);
+    put(bytes, 0, base + entity_layout_70938::primary_vtable_rvas[CORPSE]);
     put(bytes, 0x24, uint8_t{CORPSE}); put(bytes, 0x25, uint8_t{CORPSE});
     put(bytes, 0x110, guid{13, uint64_t{2} << 58});
     check(object->corpseOwner().low == 13 && object->owner().low == 13);
 
+    grid::entity_client::configure_for_tests({});
     lua_State* L = luaL_newstate();
     check(L != nullptr);
     luaL_openlibs(L);
@@ -101,7 +107,7 @@ int main() {
         assert(types[7].hierarchyMask == 0x61)
         local world = C.WorldState()
         assert(world.state == 'unavailable' and world.available == false)
-        assert(world.buildSupported == false and world.build == '1.60.1.70888')
+        assert(world.buildSupported == false and world.build == '1.60.1.70938')
         assert(C.IsInWorld() == false and C.IsLoading() == false)
         local ok, err = C.ObjectValid('0xFFFFFFFFFFFFFFFF')
         assert(ok == false and string.find(err, 'unsupported client build', 1, true))
@@ -118,6 +124,6 @@ int main() {
     if (result != 0) std::fprintf(stderr, "%s\n", lua_tostring(L, -1));
     lua_close(L);
     check(result == 0);
-    std::puts("WoW 70888 entity layouts and grid Lua API tests passed");
+    std::puts("WoW 70938 entity layouts and grid Lua API tests passed");
     return 0;
 }

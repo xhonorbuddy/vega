@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\entity_client.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\entity_client.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.entity_client",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\entity_client.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": [
+                {
+                    "logical-name": "grid.signature"
+                },
+                {
+                    "logical-name": "grid.entity_index"
+                }
+            ]
+        }
+    ]
+}

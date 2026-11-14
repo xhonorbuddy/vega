@@ -1,6 +1,7 @@
 module;
-// WoW 1.60.1.70888: port of the constructor/API-verified entities and clientState
-// modules. Evidence: binary analysis/entities-70888/README.md in this workspace.
+// WoW 1.60.1.70938: port of the constructor/API-verified entities and clientState
+// modules. Source research: binary analysis/entities-70888; migration evidence in
+// entity-verification-70938.json and WOW_API.md.
 // These are non-owning views. Call on the game thread while objects are live.
 #include <windows.h>
 #include <cstddef>
@@ -9,6 +10,7 @@ module;
 #include <unordered_map>
 
 export module grid.wow;
+import grid.entity_client;
 
 export namespace grid::wow {
 struct vector3 {
@@ -16,7 +18,7 @@ struct vector3 {
     constexpr vector3() = default;
     constexpr vector3(float a, float b, float c) : x(a), y(b), z(c) {}
 };
-static_assert(sizeof(void*) == 8, "WoW 70888 requires x64");
+static_assert(sizeof(void*) == 8, "WoW 70938 requires x64");
 #pragma pack(push, 1)
 
 // OBJECT TYPES
@@ -39,20 +41,16 @@ enum gameobject : uint8_t {
     MESHOBJECT = 14,
 };
 
-// Verified primary address points from build 1.60.1.70888 constructors.
-namespace entity_layout_70888 {
+// Verified primary address points from build 1.60.1.70938 constructors.
+namespace entity_layout_70938 {
     inline constexpr uintptr_t primary_vtable_rvas[] = {
-        0x40FAC08, 0x40F6B60, 0x40F7398, 0x40F70C0, 0x40F6E58,
-        0x40FA570, 0x40E87D8, 0x40E64F8, 0x40EED10, 0x40F7B10,
-        0x40F7850, 0x40FB1F0, 0x40FB490, 0x40E81B0, 0x40FD218,
-    };
+        0x420C778,0x4208768,0x4208F08,0x4208C30,0x42089C8,
+        0x420C0D8,0x41FA328,0x41F8070,0x41FFF48,0x4209680,
+        0x42093C0,0x420CD68,0x420D008,0x41F9D20,0x420EC60,
+    }; // Verification evidence; runtime vtables are signature-resolved.
     inline constexpr size_t name_slot = 52;
     inline constexpr size_t dead_or_ghost_slot = 75;
     inline constexpr size_t name_position_slot = 15;
-    inline constexpr uintptr_t position_rva = 0x1F6280;
-    inline constexpr uintptr_t facing_rva = 0x20ED80;
-    inline constexpr uintptr_t power_slot_rva = 0x1FBDE70;
-    inline constexpr uintptr_t death_state_check_rva = 0x1EA8870;
     inline constexpr uint32_t hierarchy_masks[] = {
         0x1, 0x3, 0x7, 0xB, 0x13, 0x21, 0x61, 0xE1,
         0x101, 0x201, 0x401, 0x801, 0x1001, 0x2001, 0x4001,
@@ -118,6 +116,20 @@ static_assert(sizeof(guid) == 0x10);
 static_assert(offsetof(guid, low) == 0 && offsetof(guid, high) == 8);
 static_assert(sizeof(vector3) == 0xC);
 
+// Verified common prefix only; this is not the complete size of any entity class.
+struct entity_header {
+    uintptr_t vtable;
+    uintptr_t component_handle;
+    guid id;
+    std::byte unknown20[4];
+    gameobject type;
+    uint8_t constructed_type;
+    std::byte unknown26[2];
+};
+static_assert(sizeof(entity_header)==0x28);
+static_assert(offsetof(entity_header,id)==0x10 && offsetof(entity_header,type)==0x24 &&
+              offsetof(entity_header,constructed_type)==0x25);
+
 // CLICK TO MOVE
 struct ctm {
     guid GUID{};					// 0x0
@@ -162,9 +174,8 @@ public:
         if (object_type >= 15)
             return false;
 
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        return module != 0 && field<uintptr_t>(0) ==
-            module + entity_layout_70888::primary_vtable_rvas[object_type];
+        return entity_client::accept_vtable(object_type,field<uintptr_t>(0),
+            reinterpret_cast<uintptr_t>(this));
     }
 
     uintptr_t base() const {
@@ -187,16 +198,16 @@ public:
         const auto object_type = static_cast<uint8_t>(type());
         const auto base_id = static_cast<uint8_t>(base_type);
         return object_type < 15 && base_id < 15 &&
-            (entity_layout_70888::hierarchy_masks[object_type] & (1u << base_id)) != 0;
+            (entity_layout_70938::hierarchy_masks[object_type] & (1u << base_id)) != 0;
     }
 
     gameobject type() const {
-        // 1.60.1.70888: independently read by object lookup and unit predicates.
+        // 1.60.1.70938: independently read by object lookup and unit predicates.
         return field<gameobject>(0x24);
     }
 
     guid id() const {
-        // 1.60.1.70888: passed to the GUID formatter in object activation.
+        // 1.60.1.70938: passed to the GUID formatter in object activation.
         return field<guid>(0x10);
     }
 
@@ -210,8 +221,7 @@ public:
             return 0.0f;
         // GetPlayerFacing uses this component-aware, transport-aware getter.
         using GetFacing = float (*)(const entity*);
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        return reinterpret_cast<GetFacing>(module + entity_layout_70888::facing_rva)(this);
+        return reinterpret_cast<GetFacing>(entity_client::get().facing)(this);
     }
 
     int dead() const {
@@ -224,14 +234,12 @@ public:
 
         // The live-object branch of UnitIsDead uses this additional check.
         using StateCheck = bool (*)(const entity*);
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        return !reinterpret_cast<StateCheck>(module +
-            entity_layout_70888::death_state_check_rva)(this);
+        return !reinterpret_cast<StateCheck>(entity_client::get().death)(this);
     }
 
     bool deadOrGhost() {
         return active() && isUnit() &&
-            vmtMethod<bool>(this, entity_layout_70888::dead_or_ghost_slot);
+            vmtMethod<bool>(this, entity_layout_70938::dead_or_ghost_slot);
     }
 
     guid corpseOwner() const {
@@ -303,9 +311,7 @@ public:
             return 0;
 
         using PowerSlot = int (*)(const entity*, int8_t);
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        const auto slot = reinterpret_cast<PowerSlot>(module +
-            entity_layout_70888::power_slot_rva)(this, static_cast<int8_t>(power_type));
+        const auto slot = reinterpret_cast<PowerSlot>(entity_client::get().power)(this, static_cast<int8_t>(power_type));
         // Constructor storage spans 0x1BC0..0x1BE7 (ten int32 slots),
         // followed by the corresponding maximum-power array at 0x1BE8.
         return slot >= 0 && slot < 10 ? field<int32_t>(0x1BC0 + slot * 4) : 0;
@@ -334,8 +340,7 @@ public:
         // The current client resolves position through the object's component
         // handle. The output is three floats, passed by pointer in RDX.
         using GetPosition = vector3* (*)(const entity*, vector3*);
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        reinterpret_cast<GetPosition>(module + entity_layout_70888::position_rva)(this, &result);
+        reinterpret_cast<GetPosition>(entity_client::get().position)(this, &result);
         return result;
     }
 
@@ -348,20 +353,20 @@ public:
         // override can calculate its name position without a model.
         if (type() != GAMEOBJECT && field<uintptr_t>(0x30) == 0)
             return v;
-        vmtMethod<vector3*>(this, entity_layout_70888::name_position_slot, &v);
+        vmtMethod<vector3*>(this, entity_layout_70938::name_position_slot, &v);
 
         return v;
     }
 
     const char* rawName() {
-        return active() ? vmtMethod<const char*>(this, entity_layout_70888::name_slot) : nullptr;
+        return active() ? vmtMethod<const char*>(this, entity_layout_70938::name_slot) : nullptr;
     }
 
     std::string name() {
         if (!active())
             return "UNKNOWN";
 
-        const char* name = vmtMethod<const char*>(this, entity_layout_70888::name_slot);
+        const char* name = vmtMethod<const char*>(this, entity_layout_70938::name_slot);
 
         if (name != nullptr && name[0] != '\0') {
             return std::string(name);
@@ -373,13 +378,7 @@ public:
 
 #pragma pack(pop)
 
-namespace client_state_70888 {
-    inline constexpr uintptr_t game_ui_flags_rva = 0x4CD5D78;
-    inline constexpr uintptr_t loading_request_counter_pointer_rva = 0x69E47C0;
-    inline constexpr uintptr_t loading_screen_layer_rva = 0x69E4828;
-    inline constexpr uint32_t image_timestamp = 0x6AF2358B;
-    inline constexpr uint32_t image_size = 0x7313A00;
-
+namespace client_state_70938 {
     enum class phase { unavailable, outside_world, loading, in_world };
 
     struct snapshot {
@@ -403,28 +402,15 @@ namespace client_state_70888 {
     };
 
     inline snapshot read() {
-        const auto module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
-        if (!module)
-            return {};
-        const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(module);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE)
-            return {};
-        const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS64*>(module + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE ||
-            nt->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64 ||
-            nt->FileHeader.TimeDateStamp != image_timestamp ||
-            nt->OptionalHeader.SizeOfImage != image_size)
-            return {};
-
-        const auto counter = *reinterpret_cast<const volatile uintptr_t*>(module +
-            loading_request_counter_pointer_rva);
+        if (!entity_client::supported()) return {};
+        const auto& addresses=entity_client::get();
+        const auto counter=*reinterpret_cast<const volatile uintptr_t*>(addresses.counter);
         if (!counter)
             return {};
         snapshot result{};
-        result.game_ui_flags = *reinterpret_cast<const volatile uint16_t*>(module + game_ui_flags_rva);
+        result.game_ui_flags = *reinterpret_cast<const volatile uint16_t*>(addresses.flags);
         result.loading_requests = *reinterpret_cast<const volatile int32_t*>(counter);
-        result.loading_screen_layer = *reinterpret_cast<const volatile uintptr_t*>(module +
-            loading_screen_layer_rva) != 0;
+        result.loading_screen_layer = *reinterpret_cast<const volatile uintptr_t*>(addresses.layer) != 0;
         result.available = true;
         return result;
     }

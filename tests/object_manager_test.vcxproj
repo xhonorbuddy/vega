@@ -1,0 +1,11 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+<PropertyGroup Label="Globals"><WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion></PropertyGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+<PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v145</PlatformToolset><UseDebugLibraries>false</UseDebugLibraries></PropertyGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+<PropertyGroup><OutDir>$(ProjectDir)..\tmp\</OutDir><IntDir>$(ProjectDir)..\tmp\object_manager_test\</IntDir></PropertyGroup>
+<ItemDefinitionGroup><ClCompile><LanguageStandard>stdcpp20</LanguageStandard><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><PreprocessorDefinitions>GRID_ENTITY_TESTING;%(PreprocessorDefinitions)</PreprocessorDefinitions><AdditionalIncludeDirectories>$(ProjectDir)..\lua-5.1</AdditionalIncludeDirectories></ClCompile><Link><AdditionalDependencies>$(ProjectDir)..\lib\x64\Release\lua-5.1.lib;%(AdditionalDependencies)</AdditionalDependencies></Link></ItemDefinitionGroup>
+<ItemGroup><ClCompile Include="object_manager_test.cpp" /><ClCompile Include="..\grid\exceptions.ixx" /><ClCompile Include="..\grid\breakpoint.ixx" /><ClCompile Include="..\grid\lua_registration.ixx" /><ClCompile Include="..\grid\api.ixx" /><ClCompile Include="..\grid\signature.ixx" /><ClCompile Include="..\grid\entity_client.ixx" /><ClCompile Include="..\grid\entity_index.ixx" /><ClCompile Include="..\grid\wow.ixx" /><ClCompile Include="..\grid\wow_api.ixx" /><ClCompile Include="..\grid\object_manager.ixx" /><ClCompile Include="..\grid\object_api.ixx" /></ItemGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

@@ -28,6 +28,11 @@ supports adding entries to a table already on the stack.
   Existing fake-raise behavior and monitoring are retained.
 - `client_lua.ixx`: resolves and dereferences the client Lua-state slot.
 - `registration.ixx`: one-shot game-window dispatch and API registration.
+- `entity_client.ixx`: build-checked native entity bindings from IDA patterns.
+- `entity_index.ixx`: read-only GUID-to-CGObject lookup in the verified client index.
+- `wow.ixx` / `wow_api.ixx`: verified 70938 entity layouts and guarded queries.
+- `object_manager.ixx` / `object_api.ixx`: GUID enumeration, fresh lookup, and
+  userdata metatables. See [WOW_API.md](WOW_API.md) for object API examples.
 
 Initialize the pool and register APIs on the game thread. Published mappings
 remain fixed for the DLL lifetime so existing Lua closures keep their targets.

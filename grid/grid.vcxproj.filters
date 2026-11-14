@@ -23,5 +23,11 @@
     <ClCompile Include="exceptions.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="breakpoint.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="lua_registration.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="entity_client.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="entity_index.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="wow.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="wow_api.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="object_manager.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="object_api.ixx"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
 </Project>

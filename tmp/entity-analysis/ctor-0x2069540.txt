@@ -1,0 +1,79 @@
+__int64 __fastcall sub_2069540(__int64 a1, __int64 a2, __int64 a3)
+{
+  __int64 v3; // rsi
+  __int64 v4; // rdx
+  __int64 v6; // rcx
+  __int128 v7; // xmm0
+  __int64 v8; // r8
+  __int64 *v9; // rax
+  __int128 v11; // [rsp+20h] [rbp-18h] BYREF
+
+  v3 = 0;
+  *(_QWORD *)(a1 + 48) = 0;
+  v4 = a1 + 160;
+  *(_QWORD *)(a1 + 56) = 0;
+  *(_QWORD *)(a1 + 64) = 0;
+  *(_QWORD *)a1 = &off_420C778;
+  *(_QWORD *)(a1 + 40) = off_41F9F18;
+  *(_QWORD *)(a1 + 96) = 0;
+  *(_QWORD *)(a1 + 104) = 0;
+  *(_QWORD *)(a1 + 112) = 0;
+  *(_QWORD *)(a1 + 120) = 0;
+  *(_DWORD *)(a1 + 152) = 1065353216;
+  *(_BYTE *)(a1 + 37) = 0;
+  *(_DWORD *)(a1 + 72) = 0;
+  *(_BYTE *)(a1 + 76) = 1;
+  *(_QWORD *)(a1 + 80) = 0;
+  *(_QWORD *)(a1 + 88) = 1065353216;
+  *(_QWORD *)(a1 + 128) = 0;
+  *(_QWORD *)(a1 + 136) = 0;
+  v6 = 1264;
+  if ( *(_BYTE *)(a3 + 1304) != 0 )
+  {
+    v11 = *(_OWORD *)(a3 + 1248);
+  }
+  else
+  {
+    v6 = 1312;
+    v11 = 0u;
+  }
+  v7 = v11;
+  *(_QWORD *)v4 = a1 + 8;
+  *(_OWORD *)(v4 + 8) = v7;
+  *(_QWORD *)(v4 + 24) = *(_QWORD *)(v6 + a3);
+  *(_DWORD *)(v4 + 32) = *(_DWORD *)(v6 + a3 + 8);
+  *(_QWORD *)(v4 + 36) = 0;
+  *(_DWORD *)(v4 + 44) = 0;
+  *(_BYTE *)(v4 + 48) = 0;
+  sub_38F09A0(v4);
+  *(_QWORD *)(a1 + 216) = 0;
+  *(_QWORD *)a1 = off_42093C0;
+  *(_QWORD *)(a1 + 40) = off_4209270;
+  *(_QWORD *)(a1 + 224) = 0;
+  *(_QWORD *)(a1 + 232) = 1065353216;
+  *(_DWORD *)(a1 + 240) = 0;
+  *(_OWORD *)(a1 + 272) = 0;
+  *(_QWORD *)(a1 + 288) = 0;
+  *(_QWORD *)(a1 + 296) = 0;
+  *(_QWORD *)(a1 + 352) = a1 + 376;
+  *(_QWORD *)(a1 + 368) = 0x8000000000000001uLL;
+  *(_QWORD *)(a1 + 328) = 0;
+  *(_QWORD *)(a1 + 336) = 0;
+  *(_QWORD *)(a1 + 344) = 0;
+  *(_QWORD *)(a1 + 360) = 0;
+  *(_WORD *)(a1 + 324) = 512;
+  *(_BYTE *)(a1 + 326) = 0;
+  *(_OWORD *)(a1 + 288) = 0u;
+  v11 = 0u;
+  *(_OWORD *)(a1 + 304) = 0u;
+  *(_BYTE *)(a1 + 37) = 10;
+  *(_OWORD *)(a1 + 248) = 0;
+  v9 = (__int64 *)(*(_QWORD *)(a1 + 8) & 0xFFFFFFFFFFFFFFFEuLL);
+  if ( v9 != nullptr )
+    v3 = *v9;
+  LOBYTE(v8) = 1;
+  *(_QWORD *)&v11 = v3;
+  *((_QWORD *)&v11 + 1) = a1;
+  sub_20E1780(a1 + 40, &v11, v8);
+  return a1;
+}

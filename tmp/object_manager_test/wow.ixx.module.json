@@ -1,0 +1,26 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\wow.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\wow.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.wow",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\wow.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": [
+                {
+                    "logical-name": "grid.entity_client"
+                }
+            ]
+        }
+    ]
+}

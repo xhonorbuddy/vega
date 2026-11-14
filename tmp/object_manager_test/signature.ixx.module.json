@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\signature.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\object_manager_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\object_manager_test\\signature.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.signature",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\signature.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": []
+        }
+    ]
+}
