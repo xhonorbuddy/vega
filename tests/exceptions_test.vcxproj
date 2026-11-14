@@ -6,6 +6,6 @@
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 <PropertyGroup><OutDir>$(ProjectDir)..\tmp\</OutDir><IntDir>$(ProjectDir)..\tmp\exceptions_test\</IntDir></PropertyGroup>
 <ItemDefinitionGroup><ClCompile><LanguageStandard>stdcpp20</LanguageStandard><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><AdditionalIncludeDirectories>$(ProjectDir)..\lua-5.1</AdditionalIncludeDirectories></ClCompile><Link><AdditionalDependencies>$(ProjectDir)..\lib\x64\Release\lua-5.1.lib;%(AdditionalDependencies)</AdditionalDependencies></Link></ItemDefinitionGroup>
-<ItemGroup><ClCompile Include="exceptions_test.cpp" /><ClCompile Include="..\grid\exceptions.ixx" /><ClCompile Include="..\grid\breakpoint.ixx" /><ClCompile Include="..\grid\signature.ixx" /></ItemGroup>
+<ItemGroup><ClCompile Include="exceptions_test.cpp" /><ClCompile Include="..\grid\exceptions.ixx" /><ClCompile Include="..\grid\breakpoint.ixx" /><ClCompile Include="..\grid\lua_registration.ixx" /><ClCompile Include="..\grid\api.ixx" /><ClCompile Include="..\grid\signature.ixx" /></ItemGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

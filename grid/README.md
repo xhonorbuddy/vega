@@ -1,31 +1,43 @@
 # Grid Lua registration
 
-Build `grid/grid.vcxproj` for x64 (Debug or Release). The DLL registers its VEH
-and posts a one-shot window message. On the window thread it resolves the Lua
-state and breakpoint, then registers the existing global `C()` callback using
-`lua-5.1.lib`. The window procedure is restored before registration.
+Build `grid/grid.vcxproj` for x64 (Debug or Release). On the game window thread,
+the DLL resolves the existing Lua state, caches a pool of existing INT3 locations,
+and registers the API table using the vendored `lua-5.1.lib`.
 
-- `breakpoint.ixx`: resolves an existing INT3 in executable padding using an
-  IDA-style byte pattern; no client bytes or page protections are changed.
-- `signature.ixx`: scans readable executable pages and rejects ambiguous matches.
+```lua
+print(C.PrintHere())  -- here
+print(C.PrintThere()) -- there
+```
+
+Define callbacks and their null-terminated `luaL_Reg` table in `api.ixx`.
+`grid::lua_registration::register_api(L, "C", api::functions)` assigns the next
+available pool slot to each distinct callback and calls `luaL_register` with
+the resulting table. It leaves the library table on the stack, just like
+`luaL_register`; the caller removes it with `lua_pop(L, 1)`. A null library name
+supports adding entries to a table already on the stack.
+
+- `signature.ixx`: unique-match scanning plus bounded multi-match scanning.
+- `breakpoint.ixx`: scans `C3 CC CC CC CC 48`, selecting the first existing `CC`
+  after each `RET`. Requires at least 20 executable candidates and caches up to
+  100. The 70938 executable has 3,128 raw matches for this broad pattern.
+- `lua_registration.ixx`: checks capacity for the entire API before changing Lua;
+  reuses cached mappings for repeated callbacks or registration under another name.
+- `api.ixx`: `PrintHere` and `PrintThere` return their respective strings.
+- `exceptions.ixx`: resolves only assigned pool entries to their callbacks using
+  a lock-free lookup. Unassigned and unrelated breakpoints follow normal handling.
+  Existing fake-raise behavior and monitoring are retained.
 - `client_lua.ixx`: resolves and dereferences the client Lua-state slot.
-- `registration.ixx`: registers `C` with the resolved breakpoint as its callback.
-- `exceptions.ixx`: redirects only that breakpoint to the existing Lua callback,
-  which returns `here`. Existing fake-raise handling and monitoring remain.
-- `api.ixx`: retains the separate AFK table for later use; current registration
-  follows the existing `C()` hop instead of registering that table.
+- `registration.ixx`: one-shot game-window dispatch and API registration.
 
-The patcher and its tests have been removed. There are no client patch calls.
+Initialize the pool and register APIs on the game thread. Published mappings
+remain fixed for the DLL lifetime so existing Lua closures keep their targets.
+An exhausted pool rejects new callbacks; cached callbacks remain usable.
+No client code bytes or page protections are changed. Inaccessible pages are
+skipped. A broad byte pattern identifies candidates, not a guarantee of client
+stability or executable instruction boundaries in every future build.
 
-The short pattern `C3 CC CC CC CC 48` has thousands of matches in build 70938.
-The longer padding/prologue pattern in `breakpoint.ixx` matches uniquely at RVA
-`0x339DC9`; its second `CC`, RVA `0x339DCA`, is the original working hop location.
-These addresses document verification against `Wow 1.60.1.70938.exe` only;
-runtime resolution uses the signature. Missing, ambiguous, or unreadable
-patterns skip registration. The Lua-state pattern resolves slot `0x6B46468`.
-
-Validation: x64 Debug/Release builds; unique hop pattern checked against the
-70938 executable; exception tests cover handler lifecycle, unrelated breakpoint
-propagation, and 100 Lua calls through an executable fixture's resolved INT3.
-Live client stability has not been tested. Keep the DLL and its handler loaded
-while Lua retains the callback.
+Validation includes Debug/Release builds, scanner boundary tests, and exception
+integration tests covering the 20-candidate minimum, 100-slot cap, two callbacks,
+repeat-registration cache reuse, exhaustion without Lua changes, and unrelated
+breakpoints. Live client stability has not been tested. Keep the DLL and its
+handler loaded while Lua holds registered callbacks.

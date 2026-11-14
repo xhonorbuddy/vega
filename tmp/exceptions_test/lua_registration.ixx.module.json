@@ -1,0 +1,26 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\exceptions_test\\lua_registration.ixx.obj",
+            "outputs": [
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\exceptions_test\\vc145.pdb",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tests\\..\\tmp\\exceptions_test\\",
+                "C:\\Users\\DELTA\\Documents\\GitHub\\vega\\tmp\\exceptions_test\\lua_registration.ixx.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "grid.lua_registration",
+                    "source-path": "c:\\users\\delta\\documents\\github\\vega\\grid\\lua_registration.ixx",
+                    "is-interface": true
+                }
+            ],
+            "requires": [
+                {
+                    "logical-name": "grid.breakpoint"
+                }
+            ]
+        }
+    ]
+}

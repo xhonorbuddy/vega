@@ -6,6 +6,7 @@ module;
 export module grid.signature;
 export namespace grid::signature {
 std::uintptr_t find(std::uintptr_t image, const char* ida);
+std::vector<std::uintptr_t> find_all(std::uintptr_t image, const char* ida, std::size_t max_matches);
 }
 
 namespace grid::signature {
@@ -34,9 +35,9 @@ bool readable(std::uintptr_t address, std::size_t size) {
 }
 }
 
-// IDA byte patterns with ?/?? wildcards. Missing and ambiguous matches fail closed.
-std::uintptr_t find(std::uintptr_t image, const char* ida) {
-    if (!image || !ida) return 0;
+// IDA byte patterns with ?/?? wildcards. Scans stop at the requested limit.
+std::vector<std::uintptr_t> find_all(std::uintptr_t image, const char* ida, std::size_t max_matches) {
+    if (!image || !ida || !max_matches) return {};
     std::vector<int> bytes;
     bool anchored = false;
     while (*ida) {
@@ -47,33 +48,33 @@ std::uintptr_t find(std::uintptr_t image, const char* ida) {
             bytes.push_back(-1);
         } else {
             const int high = hex(*ida++);
-            if (!*ida) return 0;
+            if (!*ida) return {};
             const int low = hex(*ida++);
-            if (high < 0 || low < 0) return 0;
+            if (high < 0 || low < 0) return {};
             bytes.push_back(high * 16 + low);
             anchored = true;
         }
-        if (*ida && *ida != ' ') return 0;
+        if (*ida && *ida != ' ') return {};
     }
-    if (bytes.empty() || !anchored) return 0;
+    if (bytes.empty() || !anchored) return {};
     const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(image);
-    if (dos->e_magic != IMAGE_DOS_SIGNATURE) return 0;
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE) return {};
     const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS64*>(image + dos->e_lfanew);
-    if (nt->Signature != IMAGE_NT_SIGNATURE || nt->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64) return 0;
+    if (nt->Signature != IMAGE_NT_SIGNATURE || nt->FileHeader.Machine != IMAGE_FILE_MACHINE_AMD64) return {};
     const auto* section = IMAGE_FIRST_SECTION(nt);
-    std::uintptr_t result = 0;
+    std::vector<std::uintptr_t> result;
     for (unsigned s = 0; s < nt->FileHeader.NumberOfSections; ++s) {
         if (!(section[s].Characteristics & IMAGE_SCN_MEM_EXECUTE)) continue;
         const auto size = section[s].Misc.VirtualSize;
         const auto rva = section[s].VirtualAddress;
-        if (rva > nt->OptionalHeader.SizeOfImage || size > nt->OptionalHeader.SizeOfImage - rva) return 0;
+        if (rva > nt->OptionalHeader.SizeOfImage || size > nt->OptionalHeader.SizeOfImage - rva) return {};
         const auto begin = image + rva;
         const auto end = begin + size;
         for (auto cursor = begin; cursor < end;) {
             MEMORY_BASIC_INFORMATION page{};
-            if (!VirtualQuery(reinterpret_cast<void*>(cursor), &page, sizeof(page))) return 0;
+            if (!VirtualQuery(reinterpret_cast<void*>(cursor), &page, sizeof(page))) return {};
             const auto page_end = reinterpret_cast<std::uintptr_t>(page.BaseAddress) + page.RegionSize;
-            if (page_end <= cursor) return 0;
+            if (page_end <= cursor) return {};
             const auto limit = (page_end < end) ? page_end : end;
             if (readable(cursor, limit - cursor)) {
                 for (auto p = cursor; p < limit && bytes.size() <= end - p; ++p) {
@@ -83,13 +84,17 @@ std::uintptr_t find(std::uintptr_t image, const char* ida) {
                     std::size_t i = 0;
                     while (i < bytes.size() && (bytes[i] < 0 || data[i] == bytes[i])) ++i;
                     if (i != bytes.size()) continue;
-                    if (result) return 0;
-                    result = p;
+                    result.push_back(p);
+                    if (result.size() == max_matches) return result;
                 }
             }
             cursor = limit;
         }
     }
     return result;
+}
+std::uintptr_t find(std::uintptr_t image, const char* ida) {
+    const auto matches = find_all(image, ida, 2);
+    return matches.size() == 1 ? matches[0] : 0;
 }
 }

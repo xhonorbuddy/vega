@@ -12,13 +12,18 @@ extern const luaL_Reg functions[];
 }
 namespace grid::api {
 namespace {
-int afk(lua_State* L) {
-    lua_pushstring(L, "hello");
+int print_here(lua_State* L) {
+    lua_pushstring(L, "here");
+    return 1;
+}
+int print_there(lua_State* L) {
+    lua_pushstring(L, "there");
     return 1;
 }
 }
 const luaL_Reg functions[] = {
-    { "AFK", afk },
+    { "PrintHere", print_here },
+    { "PrintThere", print_there },
     { nullptr, nullptr },
 };
 }

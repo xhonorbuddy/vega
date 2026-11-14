@@ -22,5 +22,6 @@
     <ClCompile Include="registration.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="exceptions.ixx"><Filter>Source Files</Filter></ClCompile>
     <ClCompile Include="breakpoint.ixx"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="lua_registration.ixx"><Filter>Source Files</Filter></ClCompile>
   </ItemGroup>
 </Project>

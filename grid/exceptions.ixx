@@ -1,11 +1,5 @@
 module;
 #include <windows.h>
-#include "luaconf.h"
-#undef LUA_API
-#define LUA_API extern "C"
-#include "lua.h"
-#include "lauxlib.h"
-
 export module grid.exceptions;
 import grid.breakpoint;
 
@@ -17,11 +11,6 @@ LONG observed_count() noexcept;
 
 namespace grid::exceptions {
 namespace {
-int test(lua_State* L) {
-    lua_pushstring(L, "here");
-    return 1;
-}
-
 PVOID handler{};
 volatile LONG observed{};
 volatile LONG reporting{};
@@ -30,17 +19,18 @@ LONG CALLBACK monitor(EXCEPTION_POINTERS* info) noexcept {
     if (!info || !info->ExceptionRecord) return EXCEPTION_CONTINUE_SEARCH;
     const auto& record = *info->ExceptionRecord;
 
-    // Hop
-    if (record.ExceptionCode == STATUS_BREAKPOINT && info->ContextRecord &&
-        breakpoint::address() != 0 &&
-        reinterpret_cast<DWORD64>(record.ExceptionAddress) == breakpoint::address()) {
-        info->ContextRecord->Rip = (DWORD64)test;
-        return EXCEPTION_CONTINUE_EXECUTION;
+    // Redirect only assigned pool entries. The lookup is lock-free and allocates nothing.
+    if (record.ExceptionCode == STATUS_BREAKPOINT && info->ContextRecord) {
+        const auto callback = breakpoint::target(reinterpret_cast<DWORD64>(record.ExceptionAddress));
+        if (callback) {
+            info->ContextRecord->Rip = callback;
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
     }
 
     // Bypass fake raise
-    if (record.ExceptionCode == 0xC00000E5)
-        return EXCEPTION_CONTINUE_EXECUTION;
+    //if (record.ExceptionCode == 0xC00000E5)
+    //    return EXCEPTION_CONTINUE_EXECUTION;
     // OutputDebugString can itself raise these notifications.
     if (record.ExceptionCode == 0x40010006 || record.ExceptionCode == 0x4001000A)
         return EXCEPTION_CONTINUE_SEARCH;

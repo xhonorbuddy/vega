@@ -11,6 +11,7 @@ export module grid.registration;
 import grid.client_lua;
 import grid.api;
 import grid.breakpoint;
+import grid.lua_registration;
 
 export namespace grid::registration {
 bool start();
@@ -27,7 +28,7 @@ LRESULT CALLBACK dispatch(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
     // Restore before entering Lua: this is a one-shot game-thread dispatch.
     stop();
     if (!breakpoint::resolve(reinterpret_cast<std::uintptr_t>(GetModuleHandleW(nullptr)))) {
-        OutputDebugStringA("[grid] breakpoint signature missing, ambiguous, or unreadable; registration skipped.\n");
+        OutputDebugStringA("[grid] fewer than 20 executable INT3 candidates found; registration skipped.\n");
         return 0;
     }
     if (!client_lua::resolve()) {
@@ -35,7 +36,11 @@ LRESULT CALLBACK dispatch(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
         return 0;
     }
     if (auto* L = client_lua::state()) {
-        lua_register(L, "C", reinterpret_cast<lua_CFunction>(breakpoint::address()));
+        if (!lua_registration::register_api(L, "C", api::functions)) {
+            OutputDebugStringA("[grid] insufficient INT3 slots or invalid API; registration skipped.\n");
+            return 0;
+        }
+        lua_pop(L, 1);
     } else {
         OutputDebugStringA("[grid] Lua state is not available; registration skipped.\n");
     }
